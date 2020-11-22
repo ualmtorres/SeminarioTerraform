@@ -453,7 +453,18 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#trueejemplo-completo">3.7. Ejemplo completo</a></li>
 </ul>
 </li>
-<li><a href="#truedespliegue-en-google-cloud">4. Despliegue en Google Cloud</a></li>
+<li><a href="#truedespliegue-en-google-cloud">4. Despliegue en Google Cloud</a>
+<ul class="sectlevel2">
+<li><a href="#truecrear-una-clave-para-la-cuenta-de-servicio">4.1. Crear una clave para la Cuenta de servicio</a></li>
+<li><a href="#trueconfiguraci-n-del-provider-2">4.2. Configuración del provider</a></li>
+<li><a href="#trueinicializar-el-provider-2">4.3. Inicializar el provider</a></li>
+<li><a href="#truedespliegue-de-una-instancia-2">4.4. Despliegue de una instancia</a></li>
+<li><a href="#truemodificar-el-despliegue-2">4.5. Modificar el despliegue</a></li>
+<li><a href="#trueejecutar-un-script-de-inicializaci-n-2">4.6. Ejecutar un script de inicialización</a></li>
+<li><a href="#truedespliegue-de-aplicaci-n-docker-compose">4.7. Despliegue de aplicación Docker Compose</a></li>
+<li><a href="#truerecursos-de-inter-s">4.8. Recursos de interés</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -871,6 +882,12 @@ variable "security_groups" {
 </li>
 </ul>
 </div>
+<div class="paragraph">
+<p>Una caracterísitica muy interesante de Terraform es la idempotencia, así como la facilidad para aplicar cambios. Si volvemos a ejecutar un despliegue con <code>terraform apply</code> y no ha habido cambios en los archivos de configuración tras el último despliegue (cuyo estado quedó almacenado en el archivo <code>.tfstate</code>), el despliegue quedará intacto. Es decir, no se volverá a crear infraestructura repetida ni se reemplazará la infraestructura creada por una nueva si no hay cambios en los archivos de configuración.</p>
+</div>
+<div class="paragraph">
+<p>Sin embargo, si modificamos la configuración modificando los archivos Terraform estaremos indicando un nuevo estado al que queremos llegar. En este caso, al aplicar <code>terraform apply</code> sí se desplegarán los cambios realizados en la configuración. Sin embargo, sólo se desplegarán los cambios, manteniendo intacta la configuración no modificada.</p>
+</div>
 <div class="sidebarblock">
 <div class="content">
 <div class="title">Atención al archivo de estado</div>
@@ -896,6 +913,60 @@ variable "security_groups" {
 </div>
 <div class="paragraph">
 <p>Más información sobre <a href="https://www.terraform.io/docs/state/remote.html">estado remoto</a> y <a href="https://www.terraform.io/docs/backends/">configuración de backends</a>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Google Cloud Storage ofrece <a href="https://www.terraform.io/docs/backends/types/gcs.html">soporte para el almacenamiento del estado de Terraform</a> con la opción de bloqueo. Crea un segmento (<em>bucket</em>) y activa el versionado de objetos para recuperación de estados anteriores ante errores accidentales.</p>
+</div>
+<div class="paragraph">
+<p>Terraform también permite usar una base de datos PostgreSQL para el almacenamiento del estado con la opción de bloqueo. Aprovisiona una máquina virtual con SQL o usa un servicio de PostgreSQL en la nube para el almacenamiento de estado en PostgreSQL.</p>
+</div>
+<div class="paragraph">
+<p>Actualmente. Terraform da una lista bastante amplia de backends para almacenamiento de estado</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.terraform.io/docs/backends/types/azurerm.html">Azure Blob Storage</a></p>
+</li>
+<li>
+<p><a href="https://www.terraform.io/docs/backends/types/consul.html">Consul</a></p>
+</li>
+<li>
+<p><a href="https://www.terraform.io/docs/backends/types/etcdv3.html">etcd</a></p>
+</li>
+<li>
+<p><a href="https://www.terraform.io/docs/backends/types/gcs.html">Google Cloud Storage</a></p>
+</li>
+<li>
+<p><a href="https://www.terraform.io/docs/backends/types/http.html">cliente REST HTTP</a>. Prueba con este <a href="https://medium.com/@meson10/remote-terraform-state-server-47c481983268">ejemplo</a> en Go MongoDB</p>
+</li>
+<li>
+<p><a href="https://www.terraform.io/docs/backends/types/kubernetes.html">Kuberntes Secrets</a> (Máximo 1 MB)</p>
+</li>
+<li>
+<p><a href="https://www.terraform.io/docs/backends/types/pg.html">PostgreSQL</a></p>
+</li>
+<li>
+<p><a href="https://www.terraform.io/docs/backends/types/s3.html">Amazon S3</a></p>
+</li>
+<li>
+<p><a href="https://www.terraform.io/docs/backends/types/swift.html">OpenStack Swift</a></p>
+</li>
+<li>
+<p>&#8230;&#8203;</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -975,7 +1046,7 @@ variable "security_groups" {
 </div>
 </div>
 <div class="paragraph">
-<p>Se usan las variables definidas en el archivo <code>varialbles.tf</code></p>
+<p>Se usan las variables definidas en el archivo <code>variables.tf</code></p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1249,12 +1320,6 @@ output tf_vm_Floating_IP {
 </div>
 <div class="sect2">
 <h3 id="truemodificar-el-despliegue"><a class="anchor" href="#truemodificar-el-despliegue"></a>3.4. Modificar el despliegue</h3>
-<div class="paragraph">
-<p>Una caracterísitica muy interesante de Terraform es la idempotencia, así como la facilidad para aplicar cambios. Si volvemos a ejecutar un despliegue con <code>terraform apply</code> y no ha habido cambios en los archivos de configuración tras el último despliegue (cuyo estado quedó almacenado en el archivo <code>.tfstate</code>), el despliegue quedará intacto. Es decir, no se volverá a crear infraestructura repetida ni se reemplazará la infraestructura creada por una nueva si no hay cambios en los archivos de configuración.</p>
-</div>
-<div class="paragraph">
-<p>Sin embargo, si modificamos la configuración modificando los archivos Terraform estaremos indicando un nuevo estado al que queremos llegar. En este caso, al aplicar <code>terraform apply</code> sí se desplegarán los cambios realizados en la configuración. Sin embargo, sólo se desplegarán los cambios, manteniendo intacta la configuración no modificada.</p>
-</div>
 <div class="paragraph">
 <p>A modo de ilustración este ejemplo muestra cómo aplicar cambios a una configuración desplegada previamente. En este caso se trata de:</p>
 </div>
@@ -1610,14 +1675,618 @@ MySQL_Floating_IP = 192.168.68.135</code></pre>
 <h2 id="truedespliegue-en-google-cloud"><a class="anchor" href="#truedespliegue-en-google-cloud"></a>4. Despliegue en Google Cloud</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>To Do</p>
+<p>El provider <a href="https://registry.terraform.io/providers/hashicorp/google/latest/docs">Google Cloud</a> permite crear configuraciones Terraform para desplegar configuraciones en el gran conjunto de servicios de Google Cloud. Entre los recursos que podemos gestionar están:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Infraestructura (Instancias, Imágenes, Redes, &#8230;&#8203;)</p>
+</li>
+<li>
+<p>App Engine</p>
+</li>
+<li>
+<p>Bases de datos (Cloud SQL, Big Query, Firebase, &#8230;&#8203;)</p>
+</li>
+<li>
+<p>Kubernetes</p>
+</li>
+<li>
+<p>Cloud Storage</p>
+</li>
+<li>
+<p>&#8230;&#8203;</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="truecrear-una-clave-para-la-cuenta-de-servicio"><a class="anchor" href="#truecrear-una-clave-para-la-cuenta-de-servicio"></a>4.1. Crear una clave para la Cuenta de servicio</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Seleccionar el proyecto Google Cloud.</p>
+</li>
+<li>
+<p>En el menú de navegación seleccionae <code>IAM y administración | Cuentas de servicio</code>.</p>
+</li>
+<li>
+<p>Seleccionar <code>Crear cuenta de servicio</code>.</p>
+</li>
+<li>
+<p>Darle un nombre (p.e. <code>terraform</code>)</p>
+</li>
+<li>
+<p>Seleccionar Crear.</p>
+</li>
+<li>
+<p>En el paso <code>Conceder a esta cuenta de servicio acceso al proyecto</code> del asistente, seleccionar el rol <code>Proyecto &#8594; Editor</code>.</p>
+</li>
+<li>
+<p>Editar la Cuenta de servicio. En la sección <code>Claves</code> seleccionar <code>Añadir clave | Crear clave</code>.</p>
+</li>
+<li>
+<p>Dejar <code>JSON</code> en el tipo de clave..</p>
+</li>
+<li>
+<p>Seleccionar <code>Crear</code>. A continuación se descargará la clave privada.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="trueconfiguraci-n-del-provider-2"><a class="anchor" href="#trueconfiguraci-n-del-provider-2"></a>4.2. Configuración del provider</h3>
+<div class="paragraph">
+<p>Para usarlo hay que configurar sus <a href="https://registry.terraform.io/providers/hashicorp/google/latest/docs">parámetros de acceso</a>. Lo haremos en un archivo <code>providers.tf</code></p>
+</div>
+<div class="listingblock">
+<div class="title">El archivo <code>providers.tf</code></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-tf" data-lang="tf">terraform {
+  required_providers {
+    google = {
+      source = "hashicorp/google"
+    }
+  }
+}
+
+provider "google" {
+  version = "3.5.0"
+
+  credentials = file("../gcp-identity.json")
+
+  project = var.gcp-project
+  region  = "us-central1"
+  zone    = "us-central1-c"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Se usan las variables definidas en el archivo <code>variables.tf</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-tf" data-lang="tf">variable "gcp-username" {
+  description = "GCP user name"
+  default     = "mtorres"
+}
+
+variable "gcp-project" {
+  description = "GCP project"
+  default     = "cc2021-clouddi"
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="trueinicializar-el-provider-2"><a class="anchor" href="#trueinicializar-el-provider-2"></a>4.3. Inicializar el provider</h3>
+<div class="paragraph">
+<p>Para inicializar ejecutar <code>terraform init</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash" data-lang="bash">Initializing the backend...
+
+Initializing provider plugins...
+- Finding hashicorp/google versions matching "3.5.0"...
+- Installing hashicorp/google v3.5.0...
+- Installed hashicorp/google v3.5.0 (signed by HashiCorp)
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Esto creará una carpeta <code>.terraform</code> con en plugin de Google Cloud instalado y disponible para ser usado en el proyecto.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="truedespliegue-de-una-instancia-2"><a class="anchor" href="#truedespliegue-de-una-instancia-2"></a>4.4. Despliegue de una instancia</h3>
+<div class="paragraph">
+<p>La creación de una instancia se realiza con <a href="https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_instance">google_compute_instance</a>.</p>
+</div>
+<div class="paragraph">
+<p>A continuación, crearemos una instancia denominada <code>tf-vm</code>. El nombre que se use en <code>resource</code>, no el nombre asignado en <code>name</code>, es el que referencia al objeto resource creado. Esto permite tratar el recurso creado (p.e. para asignarle una dirección IP fija, para conectarle un volumen, …​).</p>
+</div>
+<div class="paragraph">
+<p>En el ejemplo siguiente se ilustra la creación de una máquina virtual con una dirección IP efímera.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>De forma predeterminada, si no se indica ninguna dirección IP fija, Google Cloud creará una efímera para la máquina virtual.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-tf" data-lang="tf">resource "google_compute_instance" "tf-vm" { <i class="conum" data-value="1"></i><b>(1)</b>
+  name         = "tf-vm"
+  zone         = "us-central1-a"
+  machine_type = "n1-standard-1"
+  boot_disk {
+    initialize_params {
+      image = "ubuntu-os-cloud/ubuntu-1804-lts"
+    }
+  }
+
+  # Add SSH access to the Compute Engine instance
+  metadata = {
+    ssh-keys = "${var.gcp-username}:${file("~/.ssh/id_rsa.pub")}"
+  }
+
+  # Startup script
+  # metadata_startup_script = "${file("update-docker.sh")}"
+
+  network_interface { <i class="conum" data-value="2"></i><b>(2)</b>
+    network    = "default"
+    subnetwork = "default"
+
+    access_config {} <i class="conum" data-value="3"></i><b>(3)</b>
+  }
+}
+
+output "tf-vm-internal-ip" { <i class="conum" data-value="4"></i><b>(4)</b>
+  value      = google_compute_instance.tf-vm.network_interface.0.network_ip
+  depends_on = [google_compute_instance.tf-vm]
+}
+
+output "tf-vm-ephemeral-ip" { <i class="conum" data-value="5"></i><b>(5)</b>
+  value      = google_compute_instance.tf-vm.network_interface.0.access_config.0.nat_ip
+  depends_on = [google_compute_instance.tf-vm]
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Creación de un recurso instancia (máquina virtual) en Google Cloud. El objeto recurso creado es asignado a la variable <code>tf-vm</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Red a la que se conectará la instancia creada.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Dejar <code>access_config</code> sin configurar hará que se genere una dirección IP efímera.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Dirección IP interna de la instancia</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Dirección IP efímera de la instancia</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="truemodificar-el-despliegue-2"><a class="anchor" href="#truemodificar-el-despliegue-2"></a>4.5. Modificar el despliegue</h3>
+<div class="paragraph">
+<p>A modo de ilustración este ejemplo muestra cómo aplicar cambios a una configuración desplegada previamente. En este caso se trata de:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Cambiar el tipo de máquina de la instancia desplegada a <code>n1-standard-2</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Crear un volumen de 1GB (<a href="https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_disk"><code>google_compute_disk</code></a>).</p>
+</div>
+<div class="paragraph">
+<p>Conectar el volumen a la máquina virtual (<a href="https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_attached_disk"><code>google_compute_attached_disk</code></a>).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-tf" data-lang="tf">resource "google_compute_instance" "tf-vm" {
+  name         = "tf-vm"
+  zone         = "us-central1-a"
+  machine_type = "n1-standard-2" <i class="conum" data-value="1"></i><b>(1)</b>
+  boot_disk {
+    initialize_params {
+      image = "ubuntu-os-cloud/ubuntu-1804-lts"
+    }
+  }
+...
+resource "google_compute_disk" "tf-disk" { <i class="conum" data-value="2"></i><b>(2)</b>
+  name = "tf-disk"
+  type = "pd-ssd" <i class="conum" data-value="3"></i><b>(3)</b>
+  zone = "us-central1-a" <i class="conum" data-value="4"></i><b>(4)</b>
+  size = 1 <i class="conum" data-value="5"></i><b>(5)</b>
+}
+
+resource "google_compute_attached_disk" "attached-tf-disk" {<i class="conum" data-value="6"></i><b>(6)</b>
+  disk     = google_compute_disk.tf-disk.id <i class="conum" data-value="7"></i><b>(7)</b>
+  instance = google_compute_instance.tf-vm.id <i class="conum" data-value="8"></i><b>(8)</b>
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Modificación del tamaño de la imagen</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Creación de un recurso volumen</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Tipo SSD</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Zona en la que se localiza el almacenamiento</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Especificación del tamaño del volumen</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Conexión del volumen a la instancia</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>Acceso al id del volumen creado</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
+<td>Acceso al id de la instancia</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Al ejecutar con <code>terraform apply</code>, Terraform nos informará de los cambios detectados y de la nueva configuración. La nueva configuración se aplicará si confirmamos la operación.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="trueejecutar-un-script-de-inicializaci-n-2"><a class="anchor" href="#trueejecutar-un-script-de-inicializaci-n-2"></a>4.6. Ejecutar un script de inicialización</h3>
+<div class="paragraph">
+<p>Una característica muy interesante en el despliegue de una instancia es la posibilidad de ejecutar un script de inicialización durante su creación. Esto permite la creación de instancias con paquetes instalados y configurados.</p>
+</div>
+<div class="paragraph">
+<p>Terraform permite esta operación en OpenStack pasando un script en el parámetro <code>metadata_startup_script</code> al crear la instancia.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Si se modifica el valor de <code>metadata_startup_script</code> se creará un nuevo servidor si se usa <code>terraform apply</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>A continuación se muestra un script <code>install_mysql.sh</code> que realiza varias operaciones:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Actualizar el repositorio de paquetes.</p>
+</li>
+<li>
+<p>Instalar un servidor MySQL con el password <code>my_password</code>.</p>
+</li>
+<li>
+<p>Descargar un archivo con un script SQL para inicializar una base de datos de ejemplo.</p>
+</li>
+<li>
+<p>Ejecutar el archivo SQL para inicializar la base de datos.</p>
+</li>
+<li>
+<p>Modificar el archivo de configuración de MySQL (<code>mysqld.cnf</code>) para que admita conexiones desde cualquier lugar.</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="title">El script install_mysql.sh</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash" data-lang="bash">#!/bin/bash
+
+sudo debconf-set-selections &lt;&lt;&lt; 'mysql-server mysql-server/root_password password my_password'
+sudo debconf-set-selections &lt;&lt;&lt; 'mysql-server mysql-server/root_password_again password my_password'
+sudo apt-get update
+sudo apt-get -y install mysql-server
+wget https://gist.githubusercontent.com/ualmtorres/55325478004104fbe828683ea5131e40/raw/0c8edc5750cac0a6a5796544860c8cd94d5c94ac/sginit.sql -O /home/ubuntu/sginit.sql
+mysql -h "localhost" -u "root" "-pmy_password" &lt; "/home/ubuntu/sginit.sql"
+
+sudo sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/mysql.conf.d/mysqld.cnf
+sudo service mysql restart</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Para crear la instancia con Terraform basta con crear el recurso pasando a la propiedad <code>metadata_startup_script</code> el nombre y la ruta del script de inicialización. En este caso, se supone que el script de inicialización está en el mismo directorio que el script Terraform.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash" data-lang="bash">resource "google_compute_instance" "tf-vm" {
+  name         = "tf-vm"
+  zone         = "us-central1-a"
+  machine_type = "n1-standard-1"
+  boot_disk {
+    initialize_params {
+      image = "ubuntu-os-cloud/ubuntu-1804-lts"
+    }
+  }
+
+  # Add SSH access to the Compute Engine instance
+  metadata = {
+    ssh-keys = "${var.gcp-username}:${file("~/.ssh/id_rsa.pub")}" <i class="conum" data-value="1"></i><b>(1)</b>
+  }
+
+  tags = ["ssh", "http"]
+
+  # Startup script
+  metadata_startup_script = file("setup-docker.sh")
+
+  network_interface {
+    network    = "default"
+    subnetwork = "default"
+
+    access_config {}
+  }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Pasar el script de inicialización de la instancia</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="truedespliegue-de-aplicaci-n-docker-compose"><a class="anchor" href="#truedespliegue-de-aplicaci-n-docker-compose"></a>4.7. Despliegue de aplicación Docker Compose</h3>
+<div class="paragraph">
+<p>En este apartado veremos cómo crear una instancia aprovisionada con Docker y Docker Compose. Además, la instancia se inicializará con un archivo <code>docker-compose.yml</code> que despliega dos contenedores: un contenedor MySQL con una base de datos inicializada y otro contenedor con una aplicación PHP que muestra un catálogo de productos almacenados en el contenedor MySQL.</p>
+</div>
+<div class="paragraph">
+<p>La aplicación deberá ser accesible en Internet. Por tanto, hay que definir una regla en el cortafuegos que permita la comunicación HTTP. Aprovecharemos la configuración para definir también una regla para la comunicación SSH. Cada regla tendrá un etiqueta asociada. Las instancias que deseen aplicar la regla incluirán la etiqueta correspondiente en su definición.</p>
+</div>
+<div class="listingblock">
+<div class="title">El archivo <code>network-firewall.tf</code></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash" data-lang="bash"># allow http traffic
+resource "google_compute_firewall" "allow-http" {
+  name    = "tf-fw-allow-http" <i class="conum" data-value="1"></i><b>(1)</b>
+  network = "default" <i class="conum" data-value="2"></i><b>(2)</b>
+  allow {
+    protocol = "tcp"
+    ports    = ["80"] <i class="conum" data-value="3"></i><b>(3)</b>
+  }
+  target_tags = ["http"] <i class="conum" data-value="4"></i><b>(4)</b>
+}
+
+# allow ssh traffic
+resource "google_compute_firewall" "allow-ssh" {
+  name    = "tf-fw-allow-ssh" <i class="conum" data-value="5"></i><b>(5)</b>
+  network = "default" <i class="conum" data-value="6"></i><b>(6)</b>
+  allow {
+    protocol = "tcp"
+    ports    = ["22"] <i class="conum" data-value="7"></i><b>(7)</b>
+  }
+  target_tags = ["ssh"] <i class="conum" data-value="8"></i><b>(8)</b>
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Nombre de la regla del firewall</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Red a la que se aplica la regla definida</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Puerto abierto</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Etiqueta para poder usar la regla</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Nombre de la regla del firewall</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Red a la que se aplica la regla definida</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>Puerto abierto</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
+<td>Etiqueta para poder usar la regla</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash" data-lang="bash">resource "google_compute_instance" "tf-vm" {
+  name         = "tf-vm"
+  zone         = "us-central1-a"
+  machine_type = "n1-standard-1"
+  boot_disk {
+    initialize_params {
+      image = "ubuntu-os-cloud/ubuntu-1804-lts"
+    }
+  }
+
+  # Add SSH access to the Compute Engine instance
+  metadata = {
+    ssh-keys = "${var.gcp-username}:${file("~/.ssh/id_rsa.pub")}"
+  }
+
+  tags = ["ssh", "http"] <i class="conum" data-value="1"></i><b>(1)</b>
+
+  # Startup script
+  metadata_startup_script = file("setup-docker.sh") <i class="conum" data-value="2"></i><b>(2)</b>
+
+  network_interface {
+    network    = "default"
+    subnetwork = "default"
+
+    access_config {}
+  }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Reglas del firewall a aplicar a la instancia</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Script de inicialización de la instancia</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">El script <code>setup-docker.sh</code> de inicialización de la instancia</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash" data-lang="bash">#!/bin/bash
+
+echo "Instalando Docker"
+
+apt-get update
+apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg-agent \
+    software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+apt-key fingerprint 0EBFCD88
+add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable"
+apt-get update
+apt-get install -y docker-ce docker-ce-cli containerd.io <i class="conum" data-value="1"></i><b>(1)</b>
+systemctl enable docker
+
+echo "Instalando Docker Compose" <i class="conum" data-value="2"></i><b>(2)</b>
+curl -L "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+
+git clone https://github.com/ualmtorres/docker_customer_catalog.git <i class="conum" data-value="3"></i><b>(3)</b>
+cd docker_customer_catalog
+docker-compose up -d <i class="conum" data-value="4"></i><b>(4)</b>
+
+exit 0</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Instalación de Docker</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Instalación de Docker Compose</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Clonado del repositorio con el archivo de despliegue, la aplicación y el script de inicialización de la base de datos</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Despliegue del entorno (Base de datos + Aplicación)</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>La figura siguiente ilustra el resultado tras unos minutos que se necesitan para la creación e inicialización de la instancia y despliegue de la base de datos y la aplicación de catálogo.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/CustomerCatalog.png" alt="CustomerCatalog.png">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="truerecursos-de-inter-s"><a class="anchor" href="#truerecursos-de-inter-s"></a>4.8. Recursos de interés</h3>
+<div class="paragraph">
+<p><a href="https://learn.hashicorp.com/collections/terraform/gcp-get-started">Tutorial Get Started - Google Cloud con Terraform</a></p>
+</div>
+<div class="paragraph">
+<p><a href="https://medium.com/google-cloud/deploying-docker-images-to-cloud-run-using-terraform-ee8ae4ecb72e">Tutorial Serverless Deployment on Cloud Run using Terraform</a> y <a href="https://www.sethvargo.com/configuring-cloud-run-with-terraform/">Configuring Cloud Run with Terraform</a></p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Actualmente, el provider para Cloud Run sólo permite acceso al puerto 8080 del contenedor. Por tanto, las imágenes Docker tienen que servir su contenido a través de ese puerto para un despliegue en Cloud Run desde Terraform.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2020-11-21 18:50:05 CET
+Last updated 2020-11-22 20:17:41 CET
 </div>
 </div>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.9.1/styles/github.min.css">
