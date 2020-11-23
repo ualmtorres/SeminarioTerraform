@@ -96,7 +96,7 @@ Si esto te parece interesante, puedes dedicar unos minutos a la lectura de estos
 
 ## Terraform
 
-https://www.terraform.io/[Terraform] es una herramienta para construir, modificar y versionar infraestructura de forma segura y eficiente. Es un proyecto Open Source surgido en 2014. Genera un plan de ejecución (preview) indicando qué hará para conseguir el estado deseado. Si hay cambios en la configuración, Terraform detecta los cambios y crea un plan incremental para alcanzar el nuevo estado.
+https://www.terraform.io/[Terraform] es una herramienta para construir, modificar y versionar infraestructura de forma segura y eficiente. Es un proyecto Open Source desarrollado por https://www.hashicorp.com/about[HashiCorp], surgido en 2014. Genera un plan de ejecución (preview) indicando qué hará para conseguir el estado deseado. Si hay cambios en la configuración, Terraform detecta los cambios y crea un plan incremental para alcanzar el nuevo estado.
 
 ### Instalación
 
@@ -108,7 +108,7 @@ Usage: terraform [-version] [-help] <command> [args]
 
 The available commands for execution are listed below.
 The most common, useful commands are shown first, followed by
-less common or more advanced commands. If you're just getting
+less common or more advanced commands. If you are just getting
 started with Terraform, stick with the common commands. For the
 other commands, please read the help and docs before usage.
 
@@ -262,7 +262,7 @@ Terraform guarda la información de la infraestructura creada en un archivo de e
 * Actualizar sólo los componentes necesarios
 * Eliminar componentes
 
-Una caracterísitica muy interesante de Terraform es la idempotencia, así como la facilidad para aplicar cambios. Si volvemos a ejecutar un despliegue con `terraform apply` y no ha habido cambios en los archivos de configuración tras el último despliegue (cuyo estado quedó almacenado en el archivo `.tfstate`), el despliegue quedará intacto. Es decir, no se volverá a crear infraestructura repetida ni se reemplazará la infraestructura creada por una nueva si no hay cambios en los archivos de configuración.
+Una característica muy interesante de Terraform es la idempotencia, así como la facilidad para aplicar cambios. Si volvemos a ejecutar un despliegue con `terraform apply` y no ha habido cambios en los archivos de configuración tras el último despliegue (cuyo estado quedó almacenado en el archivo `.tfstate`), el despliegue quedará intacto. Es decir, no se volverá a crear infraestructura repetida ni se reemplazará la infraestructura creada por una nueva si no hay cambios en los archivos de configuración.
 
 Sin embargo, si modificamos la configuración modificando los archivos Terraform estaremos indicando un nuevo estado al que queremos llegar. En este caso, al aplicar `terraform apply` sí se desplegarán los cambios realizados en la configuración. Sin embargo, sólo se desplegarán los cambios, manteniendo intacta la configuración no modificada.
 
@@ -371,7 +371,7 @@ variable "openstack_keypair" {
 
 Para evitar introducir datos sensibles en los archivos de configuración y evitar que queden expuestos en el sistema de control de versiones es buena práctica configurar valores sensibles en variables de entorno.
 
-El convenio de Terraform es que definamos en la shell las variables predecidas de `TF_VAR_`. Por ejemplo, definimos una variable de entorno `TF_VAR_PASSWORD` que será accedida por Terraform como `PASSWORD`.
+El convenio de Terraform es que definamos en la shell las variables precedidas de `TF_VAR_`. Por ejemplo, definimos una variable de entorno `TF_VAR_PASSWORD` que será accedida por Terraform como `PASSWORD`.
 
 .Nomemclatura de variables de entorno
 [width="100%",options="header,footer"]
@@ -625,7 +625,7 @@ resource "openstack_compute_instance_v2" "mysql" {
 
 ### Archivos de plantilla
 
-Una caracteística muy interesante de Terraform es la posibilidad de definir scripts con contenido dinámico. Se trata de arcchivos que interpolan el valor de variables generadas durante el proceso de despliegue.
+Una característica muy interesante de Terraform es la posibilidad de definir scripts con contenido dinámico. Se trata de archivos que interpolan el valor de variables generadas durante el proceso de despliegue.
 
 El procedimiento es el siguiente:
 
@@ -746,7 +746,7 @@ El provider https://registry.terraform.io/providers/hashicorp/google/latest/docs
 ### Crear una clave para la Cuenta de servicio
 
 * Seleccionar el proyecto Google Cloud.
-* En el menú de navegación seleccionae `IAM y administración | Cuentas de servicio`.
+* En el menú de navegación seleccionar `IAM y administración | Cuentas de servicio`.
 * Seleccionar `Crear cuenta de servicio`.
 * Darle un nombre (p.e. `terraform`)
 * Seleccionar Crear.
