@@ -41,7 +41,7 @@ COLOCA A CONTINUACION LOS OBJETIVOS
 
 [TIP]
 ====
-Disponible el https://github.com/ualmtorres/terraform-examples.git[repositorio] usando en este tutorial.
+Disponible el https://github.com/ualmtorres/terraform-examples.git[repositorio] usado en este tutorial.
 ====
 
 // Entrar en modo numerado de apartados
@@ -55,7 +55,7 @@ Desde hace un tiempo se oye hablar mucho de https://en.wikipedia.org/wiki/DevOps
 * Operaciones
 * Control de calidad
 
-Es una extensión natural de metodologías https://en.wikipedia.org/wiki/Agile_software_development[Agile] y es habitual el uso de los https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwiWlu-kgpPtAhUGnxQKHUvSCVwQFjABegQIBxAC&url=https%3A%2F%2Fmedium.com%2F%40seanguthrie%2Fdevops-principles-the-cams-model-9687591ca37a&usg=AOvVaw2fae_uAOcup-ClZewoN3FG[principios CAMS], cuyas siglas vienen de:
+Es una extensión natural de metodologías https://en.wikipedia.org/wiki/Agile_software_development[Agile] y es habitual el uso de los https://medium.com/@seanguthrie/devops-principles-the-cams-model-9687591ca37a[principios CAMS], cuyas siglas vienen de:
 
 * **C**ultura relacionada con comunicación humana, procesos y herramientas
 * **A**utomatización de procesos
@@ -65,7 +65,7 @@ Es una extensión natural de metodologías https://en.wikipedia.org/wiki/Agile_s
 En DevOps son habituales las prácticas siguientes:
 
 * Planificación ágil
-* Despliegue continuo. La subida de cambios al repositorio de código desencadena la ejecución de pruebas automatizadas que finalmente realizan el despliegue de los cambios tras superarse las pruebas.
+* Despliegue continuo (_CI/CD_). La subida de cambios al repositorio de código desencadena la ejecución de pruebas automatizadas que finalmente realizan el despliegue de los cambios tras superarse las pruebas.
 * Infraestructura como código (_Infrastructure as Code_). Se trata del desarrollo de scripts para las tareas de despliegue y gestión de la infraestructura
 * Contenedorización. Combinada con la Infraestructura como código permite el despliegue instantáneo de aplicaciones en contenedores.
 * Microservicios. Facilita el aislamiento de problemas y maximiza la producción
