@@ -928,72 +928,12 @@ Al ejecutar con `terraform apply`, Terraform nos informará de los cambios detec
 
 Una característica muy interesante en el despliegue de una instancia es la posibilidad de ejecutar un script de inicialización durante su creación. Esto permite la creación de instancias con paquetes instalados y configurados.
 
-Terraform permite esta operación en OpenStack pasando un script en el parámetro `metadata_startup_script` al crear la instancia.
+Terraform permite esta operación en GCP pasando un script en el parámetro `metadata_startup_script` al crear la instancia.
 
 [NOTE]
 ====
 Si se modifica el valor de `metadata_startup_script` se creará un nuevo servidor si se usa `terraform apply`.
 ====
-
-A continuación se muestra un script `install_mysql.sh` que realiza varias operaciones:
-
-* Actualizar el repositorio de paquetes.
-* Instalar un servidor MySQL con el password `my_password`.
-* Descargar un archivo con un script SQL para inicializar una base de datos de ejemplo.
-* Ejecutar el archivo SQL para inicializar la base de datos.
-* Modificar el archivo de configuración de MySQL (`mysqld.cnf`) para que admita conexiones desde cualquier lugar.
-
-.El script install_mysql.sh
-[source, bash]
-----
-#!/bin/bash
-
-sudo debconf-set-selections <<< 'mysql-server mysql-server/root_password password my_password'
-sudo debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password my_password'
-sudo apt-get update
-sudo apt-get -y install mysql-server
-wget https://gist.githubusercontent.com/ualmtorres/55325478004104fbe828683ea5131e40/raw/0c8edc5750cac0a6a5796544860c8cd94d5c94ac/sginit.sql -O /home/ubuntu/sginit.sql
-mysql -h "localhost" -u "root" "-pmy_password" < "/home/ubuntu/sginit.sql"
-
-sudo sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/mysql.conf.d/mysqld.cnf
-sudo service mysql restart
-----
-
-Para crear la instancia con Terraform basta con crear el recurso pasando a la propiedad `metadata_startup_script` el nombre y la ruta del script de inicialización. En este caso, se supone que el script de inicialización está en el mismo directorio que el script Terraform.
-
-[source, bash]
-----
-resource "google_compute_instance" "tf-vm" {
-  name         = "tf-vm"
-  zone         = "us-central1-a"
-  machine_type = "n1-standard-1"
-  boot_disk {
-    initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-1804-lts"
-    }
-  }
-
-  # Add SSH access to the Compute Engine instance
-  metadata = {
-    ssh-keys = "${var.gcp-username}:${file("~/.ssh/id_rsa.pub")}" <1>
-  }
-
-  tags = ["ssh", "http"]
-
-  # Startup script
-  metadata_startup_script = file("setup-docker.sh")
-
-  network_interface {
-    network    = "default"
-    subnetwork = "default"
-
-    access_config {}
-  }
-}
-----
-<1> Pasar el script de inicialización de la instancia
-
-### Despliegue de aplicación Docker Compose
 
 En este apartado veremos cómo crear una instancia aprovisionada con Docker y Docker Compose. Además, la instancia se inicializará con un archivo `docker-compose.yml` que despliega dos contenedores: un contenedor MySQL con una base de datos inicializada y otro contenedor con una aplicación PHP que muestra un catálogo de productos almacenados en el contenedor MySQL.
 
@@ -1104,6 +1044,8 @@ exit 0
 <2> Instalación de Docker Compose
 <3> Clonado del repositorio con el archivo de despliegue, la aplicación y el script de inicialización de la base de datos
 <4> Despliegue del entorno (Base de datos + Aplicación)
+
+Para crear la instancia con Terraform basta con crear el recurso pasando a la propiedad `metadata_startup_script` el nombre y la ruta del script de inicialización. En este caso, se supone que el script de inicialización está en el mismo directorio que el script Terraform.
 
 La figura siguiente ilustra el resultado tras unos minutos que se necesitan para la creación e inicialización de la instancia y despliegue de la base de datos y la aplicación de catálogo.
 
