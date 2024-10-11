@@ -489,10 +489,10 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_creación_de_un_grupo_de_recursos">5.4. Creación de un grupo de recursos</a></li>
 <li><a href="#_configuración_de_la_red_2">5.5. Configuración de la red</a></li>
 <li><a href="#_creación_de_una_instancia">5.6. Creación de una instancia</a></li>
-<li><a href="#_recursos_de_interés">5.7. Recursos de interés</a></li>
 </ul>
 </li>
-<li><a href="#_conclusiones">6. Conclusiones</a></li>
+<li><a href="#_recursos_de_interés">6. Recursos de interés</a></li>
+<li><a href="#_conclusiones">7. Conclusiones</a></li>
 </ul>
 </div>
 </div>
@@ -510,7 +510,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h2 id="_resumen">Resumen</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>En este tutorial se muestra el uso de una herramienta como Terraform para construir y modificar infraestructura cloud mediante código. Se estudiarán casos de uso en OpenStack y Google Cloud.</p>
+<p>En este tutorial se muestra el uso de una herramienta como Terraform para construir y modificar infraestructura cloud mediante código. Se estudiarán casos de uso en OpenStack, Google Cloud y Microsoft Azure.</p>
 </div>
 <div class="ulist">
 <div class="title">Objetivos</div>
@@ -525,7 +525,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Inicializar un proveedor cloud en Terraform.</p>
 </li>
 <li>
-<p>Desplegar infraestructura en OpenStack y Google Cloud.</p>
+<p>Desplegar infraestructura en OpenStack, Google Cloud y Microsoft Azure.</p>
 </li>
 <li>
 <p>Inicializar las máquinas virtuales en el momento de su creación.</p>
@@ -3261,10 +3261,16 @@ resource "azurerm_virtual_machine_data_disk_attachment" "tf-web-server-disk" {
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_recursos_de_interés">5.7. Recursos de interés</h3>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_recursos_de_interés">6. Recursos de interés</h2>
+<div class="sectionbody">
 <div class="ulist">
 <ul>
+<li>
+<p><a href="https://terraform-infraestructura.readthedocs.io/es/latest/adopenstack/">Administración de OpenStack con Terraform</a></p>
+</li>
 <li>
 <p><a href="https://learn.hashicorp.com/collections/terraform/gcp-get-started">Tutorial Get Started - Google Cloud con Terraform</a></p>
 </li>
@@ -3295,9 +3301,8 @@ resource "azurerm_virtual_machine_data_disk_attachment" "tf-web-server-disk" {
 </div>
 </div>
 </div>
-</div>
 <div class="sect1">
-<h2 id="_conclusiones">6. Conclusiones</h2>
+<h2 id="_conclusiones">7. Conclusiones</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>En este tutorial hemos visto cómo usar Terraform para desplegar infraestructura en la nube en diferentes proveedores. Hemos visto cómo configurar Terraform para trabajar con los proveedores y cómo crear configuraciones para desplegar recursos en la nube. Hemos visto cómo crear instancias, redes, volúmenes, direcciones IP, etc. en los proveedores OpenStack, Google Cloud y Microsoft Azure. Básicamente, hemos desarrollado un ejemplo de preparación de la infraestructura de red y de despliegue de una instancia con un servidor web Apache en cada uno de los proveedores. Esto nos ha permitido ver las similitudes en la conceptualización en el proceso de despliegue de infraestructura en la nube en diferentes proveedores así como las diferencias en la configuración de los recursos en cada uno de ellos.</p>
@@ -3307,7 +3312,7 @@ resource "azurerm_virtual_machine_data_disk_attachment" "tf-web-server-disk" {
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-10-11 19:16:07 +0200
+Last updated 2024-10-11 19:24:53 +0200
 </div>
 </div>
 </body>

@@ -26,7 +26,7 @@ image::images/di.png[]
 
 [abstract]
 == Resumen
-En este tutorial se muestra el uso de una herramienta como Terraform para construir y modificar infraestructura cloud mediante código. Se estudiarán casos de uso en OpenStack y Google Cloud.
+En este tutorial se muestra el uso de una herramienta como Terraform para construir y modificar infraestructura cloud mediante código. Se estudiarán casos de uso en OpenStack, Google Cloud y Microsoft Azure.
 
 ////
 COLOCA A CONTINUACION LOS OBJETIVOS
@@ -35,7 +35,7 @@ COLOCA A CONTINUACION LOS OBJETIVOS
 * Conocer el papel de la Infraestructura como código en la cultura DevOps.
 * Entender la utilidad y potencia de la Infraestructura como código.
 * Inicializar un proveedor cloud en Terraform.
-* Desplegar infraestructura en OpenStack y Google Cloud.
+* Desplegar infraestructura en OpenStack, Google Cloud y Microsoft Azure.
 * Inicializar las máquinas virtuales en el momento de su creación.
 
 
@@ -1846,7 +1846,9 @@ resource "azurerm_virtual_machine_data_disk_attachment" "tf-web-server-disk" {
 
 Desplegando con `terraform apply` se creará en Azure el disco de datos y se conectará a la instancia. Si nos conectamos a la instancia con `ssh` podremos ver el disco creado con `lsblk`.
 
-### Recursos de interés
+## Recursos de interés
+
+* https://terraform-infraestructura.readthedocs.io/es/latest/adopenstack/[Administración de OpenStack con Terraform]
 
 * https://learn.hashicorp.com/collections/terraform/gcp-get-started[Tutorial Get Started - Google Cloud con Terraform]
 
