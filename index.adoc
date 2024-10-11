@@ -1313,14 +1313,554 @@ image::images/CustomerCatalog.png[]
 Si estamos interesados en mostrar el log de arranque de la instancia para comprobar que el script de inicialización se ha ejecutado correctamente, podemos hacerlo desde la propia instancia ejecutando `sudo journalctl -u google-startup-scripts.service`.
 ====
 
+## Despliegue en Microsoft Azure
+
+El provider https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs[Microsoft Azure] permite crear configuraciones Terraform para desplegar configuraciones en el gran conjunto de servicios de Azure. Entre los recursos que podemos gestionar están:
+
+* Infraestructura (Instancias, Imágenes, Redes, ...)
+* App Service
+* Bases de datos (SQL, CosmosDB, ...)
+* Kubernetes
+* Storage
+* ...
+
+### Autenticación en Azure
+
+Para autenticarse en Azure, Terraform necesita que se haya iniciado la sesión con el CLI de Azure y proporcionar las credenciales de la suscripción y del proyecto en Azure. Las credenciales se obtendrán a través del CLI de Azure.
+
+[NOTE]
+====
+Azure CLI es una herramienta de línea de comandos que proporciona una experiencia unificada para administrar los servicios de Azure. Para instalarlo, seguir las instrucciones en https://learn.microsoft.com/es-es/cli/azure/install-azure-cli[Instalación de la CLI de Azure].
+====
+
+Para obtener las credenciales necesarias, seguir los siguientes pasos:
+
+1. Iniciar sesión en Azure con `az login`. Esto abrirá un navegador para autenticarse en Azure. Tras la autenticación, se mostrará un mensaje de confirmación en la terminal y devolverá los datos de la cuenta.
++
+[source, bash]
+----
+Retrieving tenants and subscriptions for the selection...
+
+[Tenant and subscription selection]
+
+No     Subscription name    Subscription ID                       Tenant
+-----  -------------------  ------------------------------------  ----------------------
+[1] *  Azure for Students   00000000-0000-0000-0000-000000000000  University of XXXXXXX
+----
+
+2. Seleccionar la suscripción y el proyecto con la que se desea trabajar. El listado aparecerá numerado. Introdcir el número correspondiente a la suscripción y al proyecto.
+3. Obtener los detalles de la suscripción con `az account show`.
++
+[source, bash]
+----
+{
+  "environmentName": "AzureCloud",
+  "homeTenantId": "00000000-0000-0000-0000-000000000000",
+  "id": "00000000-0000-0000-0000-000000000000", <1>
+  "isDefault": true,
+  "managedByTenants": [],
+  "name": "Azure for Students",
+  "state": "Enabled",
+  "tenantDefaultDomain": "students.uxxxxxx.es",
+  "tenantDisplayName": "University of XXXXXXX",
+  "tenantId": "00000000-0000-0000-0000-000000000000", <2>
+  "user": {
+    "name": "robertsmith@ual.es",
+    "type": "user"
+  }
+}
+----
+<1> ID de la suscripción
+<2> ID del proyecto
+
+Los datos que necesitamos para configurar el provider de Azure en Terraform son los que hemos destacado en el listado anterior:
+
+* `subscription_id`: ID de la suscripción.
+* `tenant_id`: ID del proyecto.
+
+### Configuración del provider
+
+Para usarlo hay que configurar sus https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/azure_cli[parámetros de acceso]. Lo haremos en un archivo `providers.tf`
+
+.El archivo `providers.tf`
+[source, tf]
+----
+# We strongly recommend using the required_providers block to set the
+# Azure Provider source and version being used
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "=4.1.0"
+    }
+  }
+}
+
+# Configure the Microsoft Azure Provider
+provider "azurerm" {
+  features {}
+
+  subscription_id = var.azure-subscription
+  tenant_id       = var.azure-tenant
+
+}
+----
+
+Se usan las variables definidas en el archivo `variables.tf`
+
+[source, tf]
+----
+variable "azure-subscription" {
+  description = "Azure subscription id"
+}
+
+variable "azure-tenant" {
+  description = "Azure tenant id"
+}
+
+variable "azure-resource-group" {
+  description = "Azure resource group name"
+}
+
+variable "azure-location" {
+  description = "Azure location"
+}
+----
+
+Los valores de las variables se pueden definir en un archivo `terraform.tfvars`
+
+.El archivo `terraform.tfvars`
+[source, tf]
+----
+azure-subscription = "00000000-0000-0000-0000-000000000000"
+azure-tenant       = "00000000-0000-0000-0000-000000000000"
+azure-resource-group = "tf-resource-group"
+azure-location = "France Central"
+----
+
+[IMPORTANT]
+====
+El archivo `terraform.tfvars` no debe ser incluido en el control de versiones. Contiene información sensible.
+====
+
+### Inicializar el provider
+
+Para inicializar ejecutar `terraform init`.
+
+[source, bash]
+----
+Initializing the backend...
+
+Initializing provider plugins...
+- Finding hashicorp/azurerm versions matching "4.1.0"...
+- Installing hashicorp/azurerm v4.1.0...
+- Installed hashicorp/azurerm v4.1.0 (signed by HashiCorp)
+
+Terraform has created a lock file .terraform.lock.hcl to record the provider
+selections it made above. Include this file in your version control repository
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+----
+
+Esto creará una carpeta `.terraform` con en plugin de Azure instalado y disponible para ser usado en el proyecto. También crea un archivo `.terraform.lock.hcl` que registra las selecciones de proveedores realizadas. Este archivo se debe incluir en el repositorio de control de versiones para garantizar que Terraform haga las mismas selecciones por defecto cuando se ejecute `terraform init` en el futuro.
+
+### Creación de un grupo de recursos
+
+Un grupo de recursos es un contenedor que mantiene los recursos relacionados para una solución de Azure. Los recursos pueden incluir instancias, bases de datos, redes, etc. Los recursos de un grupo de recursos pueden ser administrados, eliminados o actualizados en conjunto. Para crear un grupo de recursos usaremos el recurso https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group[`azurerm_resource_group`].
+
+En el siguiente ejemplo se crea un grupo de recursos denominado `tf-resource-group` en la región `France Central`, que es la región que hemos definido en el archivo `terraform.tfvars`.
+
+[source, tf]
+----
+resource "azurerm_resource_group" "tf-resource-group" {
+  name     = var.azure-resource-group
+  location = var.azure-location
+}
+----
+
+Desplegando con `terraform apply` se creará el grupo de recursos en Azure.
+
+### Configuración de la red
+
+La configuración de una red en Azure pasa por la creación de una red virtual y una subred. Es posible crear la subred directamente en la creación de la red virtual. Sin embargo, es recomendable crear la red y la subred por separado para tener un mayor control sobre la configuración de la red. Posteriormente, necesitaremos crear una interfaz de red para conectar la instancia a la red. Esta interfaz de red deberá estar conectada a la subred. Por tanto, necesitamos que la subred sea un recurso independiente para poder usarlo en la creación de la interfaz de red. Así que, resumiendo, crearemos la red y la subred por separado.
+
+Para crear una red en Azure usaremos el recurso https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network[`azurerm_virtual_network`]. Para crear una subred usaremos el recurso https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet[`azurerm_subnet`]. En el siguiente ejemplo se crea una red denominada `tf-net` y una subred denominada `tf-subnet`, ambas en la región `France Central` con el rangos de direcciones `10.0.0.0/24`.
+
+[source, tf]
+----
+resource "azurerm_virtual_network" "tf-net" {
+  name                = var.azure-net-name
+  location            = azurerm_resource_group.tf-resource-group.location
+  resource_group_name = azurerm_resource_group.tf-resource-group.name
+  address_space       = var.azure-address-space
+  dns_servers         = var.azure-dns-servers
+}
+
+resource "azurerm_subnet" "tf-subnet" {
+  name                 = var.azure-subnet-name
+  resource_group_name  = azurerm_resource_group.tf-resource-group.name
+  virtual_network_name = azurerm_virtual_network.tf-net.name
+  address_prefixes     = var.azure-subnet-prefixes
+}
+----
+
+El archivo `variables.tf` tendrá que ser modificado para incluir las variables necesarias para la creación de la red.
+
+[source, tf]
+----
+...
+# Nuevo contenido
+
+variable "azure-net-name" {
+  description = "Azure virtual net name"
+}
+
+variable "azure-address-space" {
+  description = "Azure address space"
+  type        = list(string)
+}
+
+variable "azure-dns-servers" {
+  description = "Azure DNS servers"
+  type        = list(string)
+}
+
+variable "azure-subnet-name" {
+  description = "Azure subnet name"
+}
+
+variable "azure-subnet-prefixes" {
+  description = "Azure subnet prefixes"
+  type        = list(string)
+}
+----
+
+El archivo `terraform.tfvars` tendrá que ser modificado para incluir los valores de las variables necesarias para la creación de la red.
+
+[source, tf]
+----
+...
+# Nuevo contenido
+
+azure-address-space        = ["10.0.0.0/24"]
+azure-dns-servers          = ["8.8.8.8"]
+azure-subnet-name          = "tf-subnet"
+azure-subnet-prefixes      = ["10.0.0.0/24"]
+----
+
+Desplegando con `terraform apply` se crearán en Azure la red y la subred.
+
+### Creación de una instancia
+
+En esta sección vamos a crear una instancia en Azure configurada en el arranque con un servidor web Apache. Además, crearemos un disco de datos que se conectará a la instancia. La instancia se creará en la red creada anteriormente. En Azure, la conexión de una instancia a la red se realizar a través de un recurso denominado interfaz de red. Por tanto, necesitaremos crear una interfaz de red para conectar la instancia a la red. En cuanto al acceso a la instancia, se permitirá el acceso a través del puerto 22 para SSH y del puerto 80 para HTTP. Esto exige crear un grupo de seguridad de red que permita el tráfico a través de estos puertos. Además, habrá que crear una dirección IP pública y asignarla a la instancia. A continuación se muestran los pasos a seguir para crear la instancia;
+
+1. Crear un grupo de seguridad de red que permita el tráfico a través de los puertos 22 y 80.
+2. Crear una dirección IP pública.
+3. Crear una interfaz de red conectada a la red y configurada con la dirección IP pública.
+4. Aplicar el grupo de seguridad de red a la interfaz de red.
+5. Crear la instancia conectada a la interfaz de red. La instancia se inicializará con un script de arranque que instalará y configurará el servidor web Apache.
+6. Crear un disco de datos y conectarlo a la instancia.
+
+#### Creación de un grupo de seguridad de red
+
+Un grupo de seguridad de red es un conjunto de reglas que permiten o deniegan el tráfico de red a las instancias conectadas a la red. Para crear un grupo de seguridad de red usaremos el recurso https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_group[`azurerm_network_security_group`]. En el siguiente ejemplo se crea un grupo de seguridad de red denominado `tf-nsg` que permite el tráfico a través de los puertos 22 y 80.
+
+[source, tf]
+----
+...
+# Nuevo contenido
+
+resource "azurerm_network_security_group" "tf-nsg" {
+  name                = "tf-nsg"
+  location            = azurerm_resource_group.tf-resource-group.location
+  resource_group_name = azurerm_resource_group.tf-resource-group.name
+
+  security_rule {
+    name                       = "SSH"
+    priority                   = 1001
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "HTTP"
+    priority                   = 1002
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+----
+
+Desplegando con `terraform apply` se creará en Azure el grupo de seguridad de red.
+
+#### Creación de una dirección IP pública
+
+En Azure, una dirección IP pública puede ser estática o dinámica. Esta funcionalidad se configura a través de la propiedad `sku`. El sku básico es gratuito. La diferencia entre ambos es que el sku básico no permite la asignación de una dirección IP estática. 
+
+Para crear una dirección IP pública usaremos el recurso https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip[`azurerm_public_ip`]. En el siguiente ejemplo se crea una dirección IP pública denominada `tf-ip`.
+
+[source, tf]
+----
+...
+# Nuevo contenido
+
+resource "azurerm_public_ip" "tf-web-server-ip" {
+  name                = "tf-web-server-ip"
+  location            = azurerm_resource_group.tf-resource-group.location
+  resource_group_name = azurerm_resource_group.tf-resource-group.name
+  allocation_method   = "Dynamic"
+  sku                 = "Basic"
+}
+----
+
+Desplegando con `terraform apply` se creará en Azure la dirección IP pública.
+
+#### Creación de una interfaz de red
+
+Para crear una interfaz de red usaremos el recurso https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_interface[`azurerm_network_interface`]. En el siguiente ejemplo se crea una interfaz de red denominada `tf-nic` conectada a la red y configurada con la dirección IP pública. También se aplica el grupo de seguridad de red creado anteriormente.
+
+[source, tf]
+----
+...
+# Nuevo contenido
+
+resource "azurerm_network_interface" "tf-nic" {
+  name                = "tf-nic"
+  location            = azurerm_resource_group.tf-resource-group.location
+  resource_group_name = azurerm_resource_group.tf-resource-group.name
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.tf-subnet.id
+    private_ip_address_allocation = "Dynamic" <1>
+    public_ip_address_id          = azurerm_public_ip.tf-web-server-ip.id <2>
+  }
+}
+
+resource "azurerm_network_interface_security_group_association" "tf-nic-nsg" { <3>
+  network_interface_id      = azurerm_network_interface.tf-nic.id
+  network_security_group_id = azurerm_network_security_group.tf-nsg.id
+}
+----
+<1> Asignación de una dirección IP dinámica
+<2> Asignación de la dirección IP pública a la interfaz de red
+<3> Asociación del grupo de seguridad de red a la interfaz de red
+
+Desplegando con `terraform apply` se creará en Azure la interfaz de red.
+
+#### Creación de la instancia
+
+Para crear una instancia usaremos el recurso https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/linux_virtual_machine[`azurerm_linux_virtual_machine`]. En el siguiente ejemplo se crea una instancia denominada `tf-vm` conectada a la interfaz de red creada anteriormente. La instancia se inicializará con un script de arranque que instalará y configurará el servidor web Apache. Además, será necesario configurar el nombre de usuario, la clave pública de acceso por SSH y los datos de la imagen de la instancia, que en Azure es un poco diferente a la de otros proveedores.
+
+[source, tf]
+----
+...
+# Nuevo contenido
+
+resource "azurerm_linux_virtual_machine" "tf-web-server" {
+  name                = "tf-web-server"
+  resource_group_name = azurerm_resource_group.tf-resource-group.name
+  location            = azurerm_resource_group.tf-resource-group.location
+  size                = var.azure-vm-size
+  admin_username      = var.azure-admin-username <1>
+  network_interface_ids = [ <2>
+    azurerm_network_interface.tf-nic.id,
+  ]
+
+
+  admin_ssh_key {
+    username   = var.azure-admin-username <3>
+    public_key = file("~/.ssh/id_rsa.pub") <4>
+  }
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = var.azure-storage-account-type
+  }
+
+  source_image_reference {
+    publisher = var.azure-os-publisher <5>
+    offer     = var.azure-os-offer <6>
+    sku       = var.azure-os-sku <7>
+    version   = var.azure-os-version <8>
+  }
+
+  user_data = base64encode(file("install-web-server.sh")) <9>
+
+  tags = {
+    web_server = "tf-web-server"
+  }
+}
+----
+<1> Nombre de usuario administrador de la instancia
+<2> ID de la interfaz de red a la que se conectará la instancia
+<3> Nombre de usuario para la clave pública de acceso por SSH
+<4> Clave pública de acceso por SSH
+<5> Publicador de la imagen de la instancia
+<6> Nombre de la imagen de la instancia
+<7> SKU de la imagen de la instancia. En Azure, el SKU de la imagen es el sistema operativo
+<8> Versión de la imagen del sistema operativo
+<9> Script de arranque de la instancia. El script hay que codificarlo en base64
+
+[INFO]
+====
+La imagen de la instancia en Azure se define por el publicador, la oferta, el SKU y la versión. En el caso de la imagen de Ubuntu que usamos en el ejemplo, los valores son: `publisher = "Canonical"`, `offer = "ubuntu-24-04-lts"`, `sku = "server"`, `version = "latest"`. No obstante, este convenio puede variar en función de la imagen y de la versión que se desee usar. Este enlace muestra en forma de URN los https://documentation.ubuntu.com/azure/en/latest/azure-how-to/instances/find-ubuntu-images/[valores de configuración de imágenes Ubuntu para Azure].
+====
+
+El archivo `variables.tf` tendrá que ser modificado para incluir las variables necesarias para la creación de la instancia.
+
+[source, tf]
+----
+...
+# Nuevo contenido
+
+variable "azure-vm-size" {
+  description = "Azure VM size"
+}
+
+variable "azure-admin-username" {
+  description = "Admin username"
+}
+
+variable "azure-storage-account-type" {
+  description = "Storage account type"
+  default     = "Standard_LRS"
+}
+
+variable "azure-os-publisher" {
+  description = "Publisher of the image"
+  default     = "Canonical"
+}
+
+variable "azure-os-offer" {
+  description = "Offer of the image"
+  default     = "0001-com-ubuntu-server-noble"
+}
+
+variable "azure-os-sku" {
+  description = "SKU of the image"
+  default     = "24_04-lts"
+}
+
+variable "azure-os-version" {
+  description = "Version of the image"
+  default     = "latest"
+}
+----
+
+El archivo `terraform.tfvars` tendrá que ser modificado para incluir los valores de las variables necesarias para la creación de la instancia.
+
+[source, tf]
+----
+...
+# Nuevo contenido
+
+azure-vm-size              = "Standard_B1s"
+azure-admin-username       = "mtorres"
+azure-storage-account-type = "Standard_LRS"
+azure-os-publisher         = "Canonical"
+azure-os-offer             = "ubuntu-24_04-lts"
+azure-os-sku               = "server"
+azure-os-version           = "latest"
+----
+
+El script de arranque de la instancia `install-web-server.sh` instalará y configurará el servidor web Apache. A continuación se muestra el contenido del script.
+
+.El script `install-web-server.sh`
+[source, bash]
+----
+#!/bin/bash
+
+apt-get update
+apt-get install -y apache2
+systemctl enable apache2
+systemctl start apache2
+
+echo "<h1>Welcome to Terraform Azure</h1>" > /var/www/html/index.html
+----
+
+[NOTE]
+====
+Se puede añadir un `output` para mostrar la dirección IP pública de la instancia. Para ello, añadir el siguiente código 
+====
+
+[source, tf]
+----
+output "tf-web-server-ip" {
+  value      = azurerm_public_ip.tf-web-server-ip.ip_address
+  depends_on = [azurerm_linux_virtual_machine.tf-web-server]
+}
+----
+
+Desplegando con `terraform apply` se creará en Azure la instancia y tras unos minutos se podrá acceder a través de un navegador a la dirección IP pública asignada a la instancia mostrando el mensaje de bienvenida que hemos configurado en el script de arranque. La imagen siguiente muestra el resultado.
+
+image::images/azure-web-server.png[]
+
+#### Creación de un disco de datos
+
+Azure ofrece gran flexibilidad en la creación de discos de datos. Se pueden crear discos de datos independientes o discos de datos que se conectan a la instancia. En este caso, crearemos un disco de datos gestionados que se conectará a la instancia. Para ello, usaremos el recurso https://registry.terraform.io/providers/hashicorp/Azurerm/3.92.0/docs/resources/managed_disk[`azurerm_managed_disk`]. En el siguiente ejemplo se crea un disco de datos denominado `tf-web-server-disk` de 1GB de tamaño y posteriormente lo conectaremos a la instancia.
+
+[source, tf]
+----
+...
+# Nuevo contenido
+
+resource "azurerm_managed_disk" "tf-web-server-disk" {
+  name                 = "tf-web-server-disk"
+  location             = azurerm_resource_group.tf-resource-group.location
+  resource_group_name  = azurerm_resource_group.tf-resource-group.name
+  storage_account_type = var.azure-storage-account-type
+  create_option        = "Empty"
+  disk_size_gb         = 1 <1>
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "tf-web-server-disk" {
+  managed_disk_id    = azurerm_managed_disk.tf-web-server-disk.id
+  virtual_machine_id = azurerm_linux_virtual_machine.tf-web-server.id
+  lun                = 10 <2>
+  caching            = "ReadWrite"
+}
+----
+<1> Tamaño del disco en GB
+<2> Número de unidad lógica (LUN) del disco. Este número debe ser único para cada disco conectado a la instancia. Por defecto, el valor es 0.
+
+Desplegando con `terraform apply` se creará en Azure el disco de datos y se conectará a la instancia. Si nos conectamos a la instancia con `ssh` podremos ver el disco creado con `lsblk`.
+
 ### Recursos de interés
 
-https://learn.hashicorp.com/collections/terraform/gcp-get-started[Tutorial Get Started - Google Cloud con Terraform]
+* https://learn.hashicorp.com/collections/terraform/gcp-get-started[Tutorial Get Started - Google Cloud con Terraform]
 
-https://medium.com/google-cloud/deploying-docker-images-to-cloud-run-using-terraform-ee8ae4ecb72e[Tutorial Serverless Deployment on Cloud Run using Terraform] y https://www.sethvargo.com/configuring-cloud-run-with-terraform/[Configuring Cloud Run with Terraform]
-
+* https://medium.com/google-cloud/deploying-docker-images-to-cloud-run-using-terraform-ee8ae4ecb72e[Tutorial Serverless Deployment on Cloud Run using Terraform] y https://www.sethvargo.com/configuring-cloud-run-with-terraform/[Configuring Cloud Run with Terraform]
++
 [NOTE]
 ====
 Actualmente, el provider para Cloud Run sólo permite acceso al puerto 8080 del contenedor. Por tanto, las imágenes Docker tienen que servir su contenido a través de ese puerto para un despliegue en Cloud Run desde Terraform.
 ====
 
+* https://learn.microsoft.com/en-us/azure/developer/terraform/[Terraform on Azure documentation]
+
+* https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-terraform?tabs=azure-cli[Quickstart: Use Terraform to create a Linux VM]
+
+## Conclusiones
+
+En este tutorial hemos visto cómo usar Terraform para desplegar infraestructura en la nube en diferentes proveedores. Hemos visto cómo configurar Terraform para trabajar con los proveedores y cómo crear configuraciones para desplegar recursos en la nube. Hemos visto cómo crear instancias, redes, volúmenes, direcciones IP, etc. en los proveedores OpenStack, Google Cloud y Microsoft Azure. Básicamente, hemos desarrollado un ejemplo de preparación de la infraestructura de red y de despliegue de una instancia con un servidor web Apache en cada uno de los proveedores. Esto nos ha permitido ver las similitudes en la conceptualización en el proceso de despliegue de infraestructura en la nube en diferentes proveedores así como las diferencias en la configuración de los recursos en cada uno de ellos. 
