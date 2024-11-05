@@ -1744,40 +1744,12 @@ resource "openstack_compute_instance_v2" "mysql" {
 <div class="ulist">
 <ul>
 <li>
-<p>Interpolaremos las variables en el archivo de plantilla</p>
-</li>
-<li>
-<p>Crearemos una plantilla que obtenga la dirección IP de un servidor MySQL creado en el despliegue (almacenada en una variable <code>output</code>). Dicha variable se usará para definir una variable de entorno en la instancia definida y para cambiar las variables de entorno de Apache.</p>
+<p>Crearemos una plantilla que obtenga (también llamado interpole) la dirección IP de un servidor MySQL creado en el despliegue (almacenada en una variable <code>output</code>). Dicha variable se usará para definir una variable de entorno en la instancia definida y para cambiar las variables de entorno de Apache.</p>
 </li>
 <li>
 <p>Crearemos una instancia inicializada con el archivo de la plantilla. La instancia será un servidor web inicializado con una aplicación PHP sencilla. La aplicación usará la variable de entorno inicializada por el script. La variable de entorno contiene la dirección IP del servidor MySQL al que accede la aplicación para mostrar sus datos.</p>
 </li>
 </ul>
-</div>
-<div class="listingblock">
-<div class="title">Proceso de interpolación de las variables en el archivo <code>main.tf</code></div>
-<div class="content">
-<pre class="highlight"><code class="language-tf" data-lang="tf">data "template_file" "install_appserver" {
-  template = file("install_appserver.tpl") <b class="conum">(1)</b>
-  vars = {
-    mysql_ip = openstack_compute_instance_v2.mysql.network.0.fixed_ip_v4 <b class="conum">(2)</b>
-  }
-  depends_on = [openstack_compute_instance_v2.mysql] <b class="conum">(3)</b>
-}</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<ol>
-<li>
-<p>Archivo de plantilla</p>
-</li>
-<li>
-<p>Inicialización de la variable</p>
-</li>
-<li>
-<p>Esperar a que esté creada la instancia para obtener su IP.</p>
-</li>
-</ol>
 </div>
 <div class="listingblock">
 <div class="title">Archivo plantilla <code>install_appserver.tpl</code></div>
@@ -1825,7 +1797,7 @@ resource "openstack_compute_instance_v2" "appserver" {
     name = "desarrollo-net"
   }
 
-  user_data = data.template_file.install_appserver.rendered <b class="conum">(1)</b>
+    user_data = templatefile("${path.module}/install_appserver.tpl", { mysql_ip = openstack_compute_instance_v2.mysql.network.0.fixed_ip_v4 }) <b class="conum">(1)</b>
 
   depends_on = [openstack_compute_instance_v2.mysql]
 
@@ -1838,6 +1810,9 @@ resource "openstack_compute_instance_v2" "appserver" {
 <p>Interpolación del archivo plantilla</p>
 </li>
 </ol>
+</div>
+<div class="paragraph">
+<p>El proceso de interpolación con la función <code>templatefile</code> se realiza en el momento de la creación de la instancia. Terraform sustituye las variables de la plantilla por los valores de las variables de salida generadas durante el despliegue. La función toma dos argumentos: la ruta del archivo plantilla y un mapa con las variables a interpolar.</p>
 </div>
 </div>
 <div class="sect2">
@@ -1962,7 +1937,7 @@ MySQL_Floating_IP = 192.168.68.135</code></pre>
 <p>En el menú de navegación seleccionar <code>IAM y adminsitración | IAM</code>, en la pestaña de <code>Permisos</code> localizar la cuenta de servicio creada para <code>terraform</code> y pulsar sobre <code>Editar cuenta principal</code>.</p>
 </li>
 <li>
-<p>Pulsar sobre <code>Agregar otra función</code>. Seleccionar <code>Service Networking - Administrador de Service Networking</code>.</p>
+<p>Pulsar sobre <code>Agregar otro rol</code>. Seleccionar <code>Servicios de red - Administrador de extensiones del servicio</code>.</p>
 </li>
 <li>
 <p>Guardar los cambios.</p>
@@ -3312,7 +3287,7 @@ resource "azurerm_virtual_machine_data_disk_attachment" "tf-web-server-disk" {
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-10-11 19:24:53 +0200
+Last updated 2024-11-05 17:37:56 +0100
 </div>
 </div>
 </body>

@@ -765,24 +765,8 @@ El procedimiento es el siguiente:
 
 Para ilustrar su uso:
 
-* Interpolaremos las variables en el archivo de plantilla
-* Crearemos una plantilla que obtenga la dirección IP de un servidor MySQL creado en el despliegue (almacenada en una variable `output`). Dicha variable se usará para definir una variable de entorno en la instancia definida y para cambiar las variables de entorno de Apache.
+* Crearemos una plantilla que obtenga (también llamado interpole) la dirección IP de un servidor MySQL creado en el despliegue (almacenada en una variable `output`). Dicha variable se usará para definir una variable de entorno en la instancia definida y para cambiar las variables de entorno de Apache.
 * Crearemos una instancia inicializada con el archivo de la plantilla. La instancia será un servidor web inicializado con una aplicación PHP sencilla. La aplicación usará la variable de entorno inicializada por el script. La variable de entorno contiene la dirección IP del servidor MySQL al que accede la aplicación para mostrar sus datos.
-
-.Proceso de interpolación de las variables en el archivo `main.tf`
-[source, tf]
-----
-data "template_file" "install_appserver" {
-  template = file("install_appserver.tpl") <1>
-  vars = {
-    mysql_ip = openstack_compute_instance_v2.mysql.network.0.fixed_ip_v4 <2>
-  }
-  depends_on = [openstack_compute_instance_v2.mysql] <3>
-}
-----
-<1> Archivo de plantilla
-<2> Inicialización de la variable
-<3> Esperar a que esté creada la instancia para obtener su IP.
 
 .Archivo plantilla `install_appserver.tpl`
 [source, bash]
@@ -822,13 +806,15 @@ resource "openstack_compute_instance_v2" "appserver" {
     name = "desarrollo-net"
   }
 
-  user_data = data.template_file.install_appserver.rendered <1> 
+    user_data = templatefile("${path.module}/install_appserver.tpl", { mysql_ip = openstack_compute_instance_v2.mysql.network.0.fixed_ip_v4 }) <1> 
 
   depends_on = [openstack_compute_instance_v2.mysql]
 
 }
 ----
 <1> Interpolación del archivo plantilla
+
+El proceso de interpolación con la función `templatefile` se realiza en el momento de la creación de la instancia. Terraform sustituye las variables de la plantilla por los valores de las variables de salida generadas durante el despliegue. La función toma dos argumentos: la ruta del archivo plantilla y un mapa con las variables a interpolar.
 
 ### Ejemplo completo
 
@@ -886,7 +872,7 @@ El provider https://registry.terraform.io/providers/hashicorp/google/latest/docs
 * Dejar `JSON` en el tipo de clave..
 * Seleccionar `Crear`. A continuación se descargará a nuestro equipo la clave privada.
 * En el menú de navegación seleccionar `IAM y adminsitración | IAM`, en la pestaña de `Permisos` localizar la cuenta de servicio creada para `terraform` y pulsar sobre `Editar cuenta principal`.
-* Pulsar sobre `Agregar otra función`. Seleccionar `Service Networking - Administrador de Service Networking`.
+* Pulsar sobre `Agregar otro rol`. Seleccionar `Servicios de red - Administrador de extensiones del servicio`.
 * Guardar los cambios.
 
 ### Configuración del provider
