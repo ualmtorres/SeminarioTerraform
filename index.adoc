@@ -1832,6 +1832,551 @@ resource "azurerm_virtual_machine_data_disk_attachment" "tf-web-server-disk" {
 
 Desplegando con `terraform apply` se creará en Azure el disco de datos y se conectará a la instancia. Si nos conectamos a la instancia con `ssh` podremos ver el disco creado con `lsblk`.
 
+## Bucles en Terraform
+
+Terraform tiene una forma particular de implementar bucles. Aquí veremos cómo hacerlo con contadores y con un bucle `for`. En ambos casos contamos con las variables declaradas en `variables.tf` e inicializadas en `terraform.tfvars`, como se muestra a continuación. Para ilustrar el uso de los bucles usaremos un ejemplo de creación de dos instancias. Los valores de creación de las instancias los inicializaremos en un array de objetos, donde cada objeto incluye el nombre de la instancia, el tipo de máquina y la imagen. El ejemplo lo implementaremos para Google Cloud Platform.
+
+.El archivo `variables.tf`
+----
+variable "gcp-username" {
+  description = "GCP user name"
+}
+
+variable "gcp-project" {
+  description = "GCP project"
+}
+
+variable "gcp-region" {
+  description = "GCP region"
+
+}
+
+variable "gcp-zone" {
+  description = "GCP zone"
+}
+
+variable "gcp-network" {
+  description = "GCP network"
+}
+
+variable "gcp-subnetwork" {
+  description = "GCP subnetwork"
+}
+
+variable "instances" {
+  description = "Number of instances to create"
+  type = list(object({
+    name         = string,
+    machine_type = string,
+    image        = string
+  }))
+}
+----
+
+.El archivo `terraform.tfvars`
+----
+gcp-username   = "your-username"
+gcp-project    = "your-project"
+gcp-region     = "us-central1"
+gcp-zone       = "us-central1-c"
+gcp-network    = "terraform-network"
+gcp-subnetwork = "terraform-subnetwork"
+
+instances = [{ <1>
+  name         = "database"
+  machine_type = "n1-standard-1"
+  image        = "debian-cloud/debian-11"
+  }, { <2>
+  name         = "web-server"
+  machine_type = "n1-standard-1"
+  image        = "ubuntu-os-cloud/ubuntu-2204-lts"
+  }
+]
+----
+<1> Primera instancia. Nombre: `database`, Tipo de máquina: `n1-standard-1`, Imagen: `debian-cloud/debian-11`
+<2> Segunda instancia. Nombre: `web-server`, Tipo de máquina: `n1-standard-1`, Imagen: `ubuntu-os-cloud/ubuntu-2204-lts`
+
+.El archivo `providers.tf`
+[source, tf]
+----
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "6.5.0"
+    }
+  }
+}
+
+provider "google" {
+  credentials = file("../gcp-identity.json")
+
+  project = var.gcp-project
+  region  = var.gcp-region
+  zone    = var.gcp-zone
+}
+----
+
+### Bucles con `count`
+
+Para este ejemplo usaremos un contador para crear varias instancias en GCP. La propiedad `count` se inicializa con la longitud del array de instancias. El índice del array se obtiene con `count.index`.
+
+.Archivo `main.tf`
+[source, tf]
+----
+resource "google_compute_instance" "instance" {
+  count = length(var.instances) <1>
+
+  name         = var.instances[count.index].name <2>
+  machine_type = var.instances[count.index].flavor <3>
+  boot_disk {
+    initialize_params {
+      image = var.instances[count.index].image <4>
+    }
+  }
+
+  network_interface {
+    network = google_compute_network.tf-net.self_link
+  }
+}
+----
+<1> La propiedad `count` se inicializa con la longitud del array `instances`
+<2> El nombre de la instancia se obtiene del array `instances` con el índice `count.index y la propiedad `name`
+<3> El sabor de la instancia se obtiene del array `instances` con el índice `count.index y la propiedad `flavor`
+<4> La imagen de la instancia se obtiene del array `instances` con el índice `count.index y la propiedad `image`
+
+En este caso, el recurso `openstack_compute_instance_v2` se creará tantas veces como elementos tenga el array `instances`. El índice del array se obtiene con `count.index`.
+
+[NOTE]
+====
+El ejemplo crea dos instancias, una para la base de datos y otra para el servidor web. Es sólo un ejemplo para ilustrar el uso de bucles en Terraform. Como se puede observar, no se realiza ninguna configuración adicional en las instancias. Para configurar las instancias, se puede configurar la propiedad `metadata_startup_script` con un script de inicialización. A modo de indicación, se podría añadir en las propiedades de cada instancia de los archivos de variables, el nombre del script de inicialización y el path del script.
+====
+
+Para obtener la dirección IP de las instancias creadas, usaremos `output`. En lugar de añadir una salida por cada instancia, usaremos un bucle `for` para recorrer las instancias y obtener sus direcciones IP. Sin embargo, `output` no soporta `count`. En su defecto, usaremos `for` para obtener las direcciones IP de las instancias y asignarlas a la propiedad `value` de `output`. Y en lugar de añadir el código de `output` en `main.tf`, lo añadiremos en un archivo independiente `outputs.tf`.
+
+.Archivo `outputs.tf`
+[source, tf]
+----
+output "tf-vm-internal-ip" {
+  value = [
+    for vm in google_compute_instance.tf-vm : vm.network_interface.0.network_ip <1>
+  ]
+  depends_on = [google_compute_instance.tf-vm]
+}
+
+output "tf-vm-ephemeral-ip" {
+  value = [
+    for vm in google_compute_instance.tf-vm : vm.network_interface.0.access_config.0.nat_ip <2>
+  ]
+  depends_on = [google_compute_instance.tf-vm]
+}
+----
+<1> Dirección IP interna de las instancias. El bucle `for` recorre las instancias creadas y disponibles en `google_compute_instance.tf-vm` y obtiene la dirección IP interna de cada instancia.
+<2> Dirección IP externa de las instancias. El bucle `for` recorre las instancias creadas y disponibles en `google_compute_instance.tf-vm` y obtiene la dirección IP externa de cada instancia.
+
+Una vez aplicados los cambios con `terraform apply`, se crearán las instancias en GCP y se podrán obtener las direcciones IP de las instancias con `output`.
+
+[source, bash]
+----
+$ terraform apply
+
+...
+
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+tf-vm-ephemeral-ip = [
+  "34.69.211.150",
+  "35.193.129.189",
+]
+tf-vm-internal-ip = [
+  "10.128.0.11",
+  "10.128.0.10",
+]
+----
+
+Cuando ya no se necesiten las instancias, se pueden destruir con `terraform destroy`.
+
+### Bucles con `for_each`
+
+En Terraform, el bucle `for` se usa para crear estructuras de datos, pero no se aplica para crear recursos. Por tanto, si queremos crear varios recursos en un bucle sin usar `count` necesitaremos otra construcción. Aquí es donde entra el uso de `for_each`. Veamos cómo usar `for_each` para crear las dos instancias del ejemplo anterior en GCP.
+
+Para la preparación, necesitaremos modificar los archivos `variables.tf` y `terraform.tfvars` ya que `for_each` usa mapas en lugar de arrays. A continuación se muestran las modificaciones que hay que realizar.
+
+.El archivo `variables.tf`
+[source, tf]
+----
+...
+variable "instances" {
+  description = "Number of instances to create"
+  type = map(object({
+    name         = string,
+    machine_type = string,
+    image        = string
+  }))
+}
+----
+
+.El archivo `terraform.tfvars`
+[source, tf]
+----
+...
+instances = {
+  database = {
+    name         = "database"
+    machine_type = "n1-standard-1"
+    image        = "debian-cloud/debian-11"
+  },
+  web-server = {
+    name         = "web-server"
+    machine_type = "n1-standard-1"
+    image        = "ubuntu-os-cloud/ubuntu-2204-lts"
+  }
+}
+----
+
+El archivo `main.tf` se modificará para usar `for_each` en lugar de `count`. La propiedad `for_each` se inicializa con el mapa de instancias. Una vez inicializado, `each.key` se podrá usar para obtener el nombre de la instancia (p.e. `database`, `web-server`) y `each.value` para obtener las propiedades de la instancia.
+
+.Archivo `main.tf`
+[source, tf]
+----
+resource "google_compute_instance" "instance" {
+  for_each = var.instances <1>
+
+  name         = each.value.name <2>
+  zone         = var.gcp-zone
+  machine_type = each.value.machine_type <3>
+  boot_disk {
+    initialize_params {
+      image = each.value.image <4>
+    }
+  }
+
+  # Startup script
+  # metadata_startup_script = "${file("script.sh")}"
+
+  network_interface {
+    network    = var.gcp-network
+    subnetwork = var.gcp-network
+
+    access_config {}
+  }
+}
+----
+<1> La propiedad `for_each` se inicializa con el mapa de instancias
+<2> El nombre de la instancia se obtiene con `each.value.name`
+<3> El tipo de máquina se obtiene con `each.value.machine_type`
+<4> La imagen de la instancia se obtiene con `each.value.image`
+
+Una vez aplicados los cambios con `terraform apply`, se crearán las instancias en GCP y se podrán obtener las direcciones IP de las instancias con `output`.
+
+[source, bash]
+----
+$ terraform apply
+
+...
+
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+tf-vm-ephemeral-ip = [
+  "34.132.169.85",
+  "34.69.211.150",
+]
+tf-vm-internal-ip = [
+  "10.128.0.15",
+  "10.128.0.14",
+]
+----
+
+Cuando ya no se necesiten las instancias, se pueden destruir con `terraform destroy`.
+
+## Módulos en Terraform
+
+En Terraform, los módulos son una manera de organizar, reutilizar y estructurar el código, lo cual permite crear y gestionar infraestructuras de una manera más eficiente y escalable. Un módulo en Terraform es un conjunto de archivos de configuración que se agrupan para realizar una función específica. Los módulos ayudan a dividir la infraestructura en componentes lógicos, que luego pueden ser reutilizados en otros proyectos o aplicaciones. Así, usaremos los módulos en estos casos:
+
+* Reutilización del Código: Los módulos permiten empaquetar configuraciones de recursos complejas en un solo bloque, que luego puede utilizarse en varios proyectos.
+* Mantenimiento Sencillo: Los módulos organizan el código, facilitando el mantenimiento y las actualizaciones en infraestructuras grandes y complejas.
+* Consistencia y Estandarización: Al usar un mismo módulo en diferentes entornos (desarrollo, pruebas y producción), se asegura que las configuraciones sean consistentes en todos los entornos.
+
+
+### Estructura básica de un módulo
+
+Un módulo básico suele consistir en tres archivos principales:
+
+* `main.tf`: Define los recursos principales del módulo.
+* `variables.tf`: Declara las variables necesarias para parametrizar el módulo.
+* `outputs.tf`: Especifica los valores que el módulo devolverá al ser invocado.
+
+Además, un módulo puede tener otros archivos o carpetas, como configuraciones adicionales, archivos de documentación (`README.md`), o scripts personalizados, según sea necesario.
+
+### Uso de módulos en un proyecto
+
+Una vez definido el módulo, se puede llamar en el código de Terraform utilizando el bloque `module`. A continuación, se muestra un ejemplo:
+
+[source, tf]
+----
+...
+module "web_server" {
+  source = "./path/to/module" # Puede ser una ruta local o un repositorio remoto.
+  name   = "web-server"       # Variables pasadas al módulo
+  region = "us-west-1"
+  ...
+}
+...
+----
+
+Al ejecutar este código, Terraform invoca el módulo, utiliza sus configuraciones y aplica las variables definidas al llamar al módulo.
+
+### Creación de un módulo para la creación de instancias en GCP
+
+En este ejemplo, crearemos un módulo denominado `instance_module` para la creación de instancias en Google Cloud Platform. El módulo estará en una carpeta denominada `modules` y creará una instancia en GCP con un disco de datos y una dirección IP pública. El módulo se compondrá de los siguientes archivos:
+
+* `main.tf`: Definirá los recursos principales del módulo.
+* `variables.tf`: Declarará las variables necesarias para parametrizar el módulo.
+* `outputs.tf`: Especificará los valores que el módulo devolverá al ser invocado.
+
+La estructura del proyecto será la siguiente:
+
+```
+.
+├── main.tf
+├── variables.tf
+├── outputs.tf
+├── terraform.tfvars
+├── providers.tf
+└── modules
+    └── instance_module
+        ├── main.tf
+        ├── variables.tf
+        └── outputs.tf
+```
+
+Veamos el código de los archivos del módulo. Comencemos especificando las variables necesarias en el archivo `variables.tf`.
+
+.El archivo `modules/instance_module/variables.tf`
+[source, tf]
+----
+variable "gcp-username" {
+  description = "GCP user name"
+}
+
+variable "gcp-zone" {
+  description = "GCP zone"
+}
+
+variable "gcp-network" {
+  description = "GCP network"
+}
+
+variable "gcp-subnetwork" {
+  description = "GCP subnetwork"
+}
+
+variable "instance-name" {
+  description = "Name of the instance"
+}
+
+variable "machine-type" {
+  description = "Machine type"
+}
+
+variable "image" {
+  description = "Image"
+}
+----
+
+A continuación, definimos los recursos principales del módulo en el archivo `main.tf`. Los valores de las variables se obtendrán en tiempo de ejecución de las variables con las que se llame al módulo.
+
+.El archivo `modules/instance_module/main.tf`
+[source, tf]
+----
+resource "google_compute_instance" "tf-vm" {
+  name         = var.instance-name
+  zone         = var.gcp-zone
+  machine_type = var.machine-type
+  boot_disk {
+    initialize_params {
+      image = var.image
+    }
+  }
+
+  # Add SSH access to the Compute Engine instance
+  metadata = {
+    ssh-keys = "${var.gcp-username}:${file("~/.ssh/id_rsa.pub")}"
+  }
+
+  # Startup script
+  # metadata_startup_script = "${file("script.sh")}"
+
+  network_interface {
+    network    = var.gcp-network
+    subnetwork = var.gcp-network
+
+    access_config {}
+  }
+}
+----
+
+Finalmente, especificamos en el archivo `outputs.tf` los valores que el módulo devolverá al ser llamado.
+
+.El archivo `modules/instance_module/outputs.tf`
+[source, tf]
+----
+output "tf-vm-internal-ip" { <1>
+  value      = google_compute_instance.tf-vm.network_interface.0.network_ip
+  depends_on = [google_compute_instance.tf-vm]
+}
+
+output "tf-vm-ephemeral-ip" { <2>
+  value      = google_compute_instance.tf-vm.network_interface.0.access_config.0.nat_ip
+  depends_on = [google_compute_instance.tf-vm]
+}
+----
+<1> Dirección IP interna de la instancia. Este nombre es el que se usará para obtener el valor devuelto por el módulo.
+<2> Dirección IP externa de la instancia. Este nombre es el que se usará para obtener el valor devuelto por el módulo.
+
+### Uso del módulo en el proyecto
+
+Una vez definido el módulo, se puede llamar en el código de Terraform utilizando el bloque `module`. A continuación, se muestra un ejemplo de cómo llamar al módulo `instance_module` en el archivo `main.tf`. No obstante, también será necesario definir las variables necesarias en el archivo `variables.tf` y en el archivo `terraform.tfvars`, así como el proveedor de GCP en el archivo `providers.tf` y la salida de los valores del módulo en el archivo `outputs.tf`.
+
+.El archivo `providers.tf`
+[source, tf]
+----
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "6.5.0"
+    }
+  }
+}
+
+provider "google" {
+  credentials = file("./gcp-identity.json")
+
+  project = var.gcp-project
+  region  = var.gcp-region
+  zone    = var.gcp-zone
+}
+----
+
+.El archivo `variables.tf`
+[source, tf]
+----
+variable "gcp-username" {
+  description = "GCP user name"
+}
+
+variable "gcp-project" {
+  description = "GCP project"
+}
+
+variable "gcp-region" {
+  description = "GCP region"
+
+}
+
+variable "gcp-zone" {
+  description = "GCP zone"
+}
+
+variable "gcp-network" {
+  description = "GCP network"
+}
+
+variable "gcp-subnetwork" {
+  description = "GCP subnetwork"
+}
+
+variable "instances" {
+  description = "Number of instances to create"
+  type = map(object({
+    name         = string,
+    machine_type = string,
+    image        = string
+  }))
+}
+----
+
+.El archivo `terraform.tfvars`
+[source, tf]
+----
+gcp-username   = "your-username"
+gcp-project    = "your-project"
+gcp-region     = "us-central1"
+gcp-zone       = "us-central1-c"
+gcp-network    = "terraform-network"
+gcp-subnetwork = "terraform-subnetwork"
+
+instances = {
+  database = {
+    name         = "database"
+    machine_type = "n1-standard-1"
+    image        = "debian-cloud/debian-11"
+  },
+  web-server = {
+    name         = "web-server"
+    machine_type = "n1-standard-1"
+    image        = "ubuntu-os-cloud/ubuntu-2204-lts"
+  }
+}
+----
+
+.El archivo `main.tf`
+[source, tf]
+----
+module "database" { <1>
+  source         = "./instance-module" <2>
+  instance-name  = var.instances.database.name <3>
+  machine-type   = var.instances.database.machine_type
+  image          = var.instances.database.image
+  gcp-zone       = var.gcp-zone <4>
+  gcp-username   = var.gcp-username
+  gcp-network    = var.gcp-network
+  gcp-subnetwork = var.gcp-subnetwork
+}
+
+module "web-server" {
+  source         = "./instance-module"
+  instance-name  = var.instances.web-server.name
+  machine-type   = var.instances.web-server.machine_type
+  image          = var.instances.web-server.image
+  gcp-zone       = var.gcp-zone
+  gcp-username   = var.gcp-username
+  gcp-network    = var.gcp-network
+  gcp-subnetwork = var.gcp-subnetwork
+}
+----
+<1> Llamada al módulo `instance-module`
+<2> Ruta al módulo
+<3> Variables pasadas al módulo para la personalización de la instancia
+<4> Variables genéricas necesarias para la creación de la instancia
+
+.El archivo `outputs.tf`
+[source, tf]
+----
+output "database_external_ip" {
+  value = module.database.tf-vm-ephemeral-ip <1>
+}
+
+output "web-server_external_ip" {
+  value = module.web-server.tf-vm-ephemeral-ip
+}
+
+output "database_internal_ip" {
+  value = module.database.tf-vm-internal-ip <2>
+}
+
+output "web-server_internal_ip" {
+  value = module.web-server.tf-vm-internal-ip
+}
+----
+<1> Dirección IP externa de la instancia `database` obtenida de la salida del módulo
+<2> Dirección IP interna de la instancia `database` obtenida de la salida del módulo
+
 ## Recursos de interés
 
 * https://terraform-infraestructura.readthedocs.io/es/latest/adopenstack/[Administración de OpenStack con Terraform]
